@@ -1,0 +1,40 @@
+    
+    // Others
+    "chilli": "🌶️ Chilli: Spice crop requiring multiple waves of fruit picking throughout its heavy growth phase.",
+    "turmeric": "🌿 Turmeric: Grown as a Rhizome taking 7–9 months. Harvested entirely by digging at the end.",
+    "ginger": "🌿 Ginger: Grown precisely as an underground stem crop. Requires heavy soil digging for the final harvest.",
+    "watermelon": "🍉 Watermelon: Sprawling vine ensuring large fruit harvests. Very popular explicitly as a Zaid warm-season crop.",
+    "cucumber": "🥒 Cucumber: Very fast vine crop requiring constant and frequent picking. Popular Zaid season crop.",
+    
+    // ------------------------------------
+    // Multilingual Fallbacks (Hindi, Punjabi, Urdu)
+    // ------------------------------------
+    "गेहूं": "🌾 For Wheat (गेहूं): Wheat is best planted in November in Northern India. To prevent wheat rust disease, use fungicides like Propiconazole. Apply Urea in splits for better yield.",
+    "टमाटर": "🍅 For Tomatoes (टमाटर): Tomatoes need well-drained soil and plenty of sunlight. Watering is crucial—water deeply at the base 1-2 times a week.",
+    "पीएम-किसान": "💰 PM-KISAN Scheme: The Government provides Rs 6000 per year to eligible farmers in three equal installments. Ensure your e-KYC is updated.",
+    "लीफ रस्ट": "🦠 Fungal leaf diseases like Rust can be treated using broad-spectrum fungicides.",
+    "मक्का": "🌾 Maize (Corn/मक्का): Plant seeds in direct rows. Growth involves tasseling followed by cob formation, then harvest.",
+    "धान": "🌾 Rice/Paddy (धान): Cultivation flows: Nursery → Transplant → Flooded field → Harvest when golden. Kharif season crop.",
+    "कपास": "🌱 Cotton (कपास): A long crop cycle. Wait for the bolls to open fully before picking the cotton fibers.",
+    "मौसम": "🌦️ Weather Advisory: Please check the 'Real-time Weather' section on the dashboard for exact local forecasts. Always avoid spraying chemicals on windy or rainy days.",
+    
+    // Punjabi
+    "ਕਣਕ": "🌾 For Wheat (ਕਣਕ): Wheat is best planted in November in Northern India. To prevent wheat rust disease, use fungicides like Propiconazole.",
+    "ਟਮਾਟਰ": "🍅 For Tomatoes (ਟਮਾਟਰ): Tomatoes need well-draineexport const streamChat = async (query, onChunk) => {
+  try {
+    const lowerQuery = query.toLowerCase();
+    let answer = "";
+    
+    // 1. ATTEMPT REAL GEMINI AI FIRST
+    try {
+        const GEMINI_API_KEY = "AIzaSyCVWKPIyuroCuUuwTC_ejOrTeTT2ZoyQgE"; // Provided by user
+        
+        const response = await axios.post(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+            {
+                contents: [{ role: "user", parts: [{ text: query }] }],
+                systemInstruction: { parts: [{ text: "You are CropWise GenAI, an expert agricultural assistant. CRITICAL INSTRUCTION: You MUST ONLY answer questions strictly related to agriculture, farming, crops, livestock, market prices, and government farming schemes. If a user asks about ANY other non-farming topic, politely decline and state that you only assist with agricultural topics. Keep your answers concise, well-formatted, and respond strictly in the language requested by the user." }] }
+            },
+            { timeout: 7000 } // 7-second timeout for quick fallback
+        );
+        

@@ -1,0 +1,292 @@
+import axios from 'axios';
+
+const API_BASE = 'http://localhost:8000';
+
+const api = axios.create({
+  baseURL: API_BASE,
+});
+
+export const getSchemes = async () => {
+  const response = await api.get('/schemes');
+  return response.data;
+};
+
+export const getWeather = async (city) => {
+  const response = await api.get(`/weather?city=${city}`);
+  return response.data;
+};
+
+export const sendFeedback = async (rating, message) => {
+  const response = await api.post('/feedback', { rating, message });
+  return response.data;
+};
+
+// Local Edge Intent Database for Offline/Frozen Backend Fallback
+const INTENT_DB = {
+    // ------------------------------------
+    // Conversational & Greetings
+    // ------------------------------------
+    "hi": "ðŸ‘‹ Hello! I am CropWise AI. How can I assist you with farming, crops, or weather today?",
+    "hello": "ðŸ‘‹ Hello! I am your CropWise Assistant. I can help you with crop advice, weather conditions, or government schemes.",
+    "hey": "ðŸ‘‹ Hey there! Ask me anything about agriculture, soil health, or market prices.",
+    "namaste": "ðŸ™� à¤¨à¤®à¤¸à¥�à¤¤à¥‡! à¤®à¥ˆà¤‚ à¤•à¥�à¤°à¥‰à¤ªà¤µà¤¾à¤‡à¤œ à¤�à¤†à¤ˆ à¤¹à¥‚à¤�à¥¤ à¤®à¥ˆà¤‚ à¤–à¥‡à¤¤à¥€, à¤«à¤¸à¤² à¤”à¤° à¤®à¥Œà¤¸à¤® à¤¸à¥‡ à¤œà¥�à¤¡à¤¼à¥€ à¤œà¤¾à¤¨à¤•à¤¾à¤°à¥€ à¤®à¥‡à¤‚ à¤†à¤ªà¤•à¥€ à¤®à¤¦à¤¦ à¤•à¤° à¤¸à¤•à¤¤à¤¾ à¤¹à¥‚à¤�à¥¤",
+    "who are you": "ðŸ¤– I am CropWise GenAI, your digital agricultural assistant! I am here to help you maximize your farm's yield and keep you updated on govt schemes.",
+    "what is your name": "ðŸ¤– My name is CropWise AI. I specialize in agricultural data and farming assistance.",
+    "how are you": "ðŸ˜Š I am functioning perfectly! Ready to answer all your farming questions.",
+    
+    // ------------------------------------
+    // General Agriculture Info
+    // ------------------------------------
+    "what is agriculture": "ðŸŒ± Agriculture = soil + water + crops + livestock + management system. It includes crop production, animal husbandry, fisheries, and forestry.",
+    "types of crop": "ðŸŒ¾ India categorizes crops into Food Crops (Rice, Wheat, Maize, Pulses), Cash Crops (Cotton, Sugarcane, Tobacco, Jute), Horticulture (Fruits, Veggies), and Plantation Crops (Tea, Coffee, Rubber).",
+    "food crop": "ðŸŒ¾ Food Crops include Rice (à¤šà¤¾à¤µà¤²), Wheat (à¤—à¥‡à¤¹à¥‚à¤‚), Maize (à¤®à¤•à¥�à¤•à¤¾), and Pulses (à¤¦à¤¾à¤²).",
+    "cash crop": "ðŸ’° Cash crops generate revenue quickly. Examples include Cotton, Sugarcane, Tobacco, and Jute.",
+    "horticulture": "ðŸ¥¬ Horticulture includes Fruits (like mango and banana) and Vegetables (like potato and tomato).",
+    "plantation": "ðŸŒ¿ Plantation Crops are grown on massive estates. They include Tea, Coffee, and Rubber.",
+    
+    // ------------------------------------
+    // Seasons
+    // ------------------------------------
+    "season": "ðŸŒ¦ï¸� Crop Seasons (India): Kharif (Juneâ€“Oct) includes Rice, maize, cotton. Rabi (Octâ€“March) includes Wheat, mustard. Zaid (Marchâ€“June) includes Watermelon, cucumber.",
+    "kharif": "ðŸŒ¦ï¸� Kharif season runs from June to October. Major crops include Rice, maize, and cotton.",
+    "rabi": "ðŸŒ¦ï¸� Rabi season runs from October to March. Major crops include Wheat and mustard.",
+    "zaid": "ðŸŒ¦ï¸� Zaid season is a short summer crop season from March to June. Ideal for Watermelon and cucumber.",
+    
+    // ------------------------------------
+    // Agronomic Factors & Climate
+    // ------------------------------------
+    "factor": "ðŸŒ� Factors Affecting Agriculture: Climate (Temperature, Rainfall, Humidity), Soil Types (Alluvial, Black, Red), and Water access (Rain-fed vs Irrigation).",
+    "climate": "ðŸŒ¡ï¸� Key Climate factors include Temperature, Rainfall, and Humidity. Always check our Weather dashboard before spraying chemicals.",
+    "alluvial": "ðŸŒ± Alluvial soil is highly fertile and best for wheat and rice.",
+    "black soil": "ðŸŒ± Black soil is exceptionally good for managing cotton crops.",
+    "red soil": "ðŸŒ± Red soil can be made fertile with organic matter and is used for pulses and millets.",
+    
+    // ------------------------------------
+    // Farming Process
+    // ------------------------------------
+    "farming process": "ðŸšœ Step-by-Step Farming: 1. Soil Prep (ploughing, levelling) 2. Sowing (seed drill) 3. Manure/Fertilizer 4. Irrigation 5. Weeding 6. Harvesting 7. Storage.",
+    "step by step": "ðŸšœ Step-by-Step Farming: 1. Soil Prep (ploughing, levelling) 2. Sowing (seed drill) 3. Manure/Fertilizer 4. Irrigation 5. Weeding 6. Harvesting 7. Storage.",
+    "plough": "ðŸšœ Preparation of Soil relies heavily on ploughing to aerate the soil and levelling for water distribution.",
+    "sowing": "ðŸšœ Sowing requires proper seeds selection and precise spacing using a seed drill.",
+    "weeding": "ðŸšœ Weeding implies removing unwanted plants so they don't consume your crop's nutrients.",
+    "harvesting": "ðŸšœ Harvesting is the process of cutting or picking mature crops.",
+    "storage": "ðŸ“¦ Storage involves saving harvested grains in dry Warehouses or Cold storage to prevent fungal rot.",
+    
+    // ------------------------------------
+    // Irrigation & Watering
+    // ------------------------------------
+    "irrigation": "ðŸ’§ Irrigation Methods: Canal networks, Drip irrigation (water saving technique), Sprinkler systems, and Tube wells.",
+    "drip": "ðŸ’§ Drip irrigation directly waters the roots, making it the highest water-saving method in modern farming.",
+    "sprinkler": "ðŸ’§ Sprinkler systems shower water evenly over the field, simulating natural rainfall.",
+    "canal": "ðŸ’§ Canals are essential traditional networks that pull water from rivers straight to agricultural fields.",
+
+    // ------------------------------------
+    // Fertilizers & Pests
+    // ------------------------------------
+    "fertilizer": "ðŸ§ª Fertilizers: Use Organic (Compost, Green manure) or Chemical (Nitrogen, Phosphorus, Potassium). Balance NPK based on soil tests.",
+    "organic": "ðŸŒ± Organic Manure deeply enriches soil texture. Excellent examples are Compost and Green manure.",
+    "chemical fertilizer": "ðŸ§ª Chemical fertilizers directly inject high levels of Nitrogen (N), Phosphorus (P), and Potassium (K) into young plants.",
+    "npk": "ðŸ§ª NPK refers to Nitrogen (N) for leaf growth, Phosphorus (P) for root development, and Potassium (K) for overall cellular health.",
+    "pest": "ðŸ�› Pests & Diseases involve Insects (locusts, aphids), Fungi (rust), and Bacteria. Control them using Pesticides or Natural Biocontrol.",
+    "locust": "ðŸ�› Locusts and aphids are damaging insects. Biocontrol (using natural predators) or chemical pesticides are required.",
+    "rust": "ðŸ¦  Fungal leaf diseases like Rust can be treated using broad-spectrum fungicides.",
+    "disease": "ðŸ¦  Crop Disease Management: If your crops are yellowing or spotting, they might have fungal issues like Blight or Rust. Use our 'Disease Scanner' tool on the home page!",
+
+    // ------------------------------------
+    // Modern Farming & Future
+    // ------------------------------------
+    "smart farm": "ðŸ¤– Smart Farming technologies use IoT sensors, AI crop prediction, Drones for spraying, and Satellite monitoring to maximize yield.",
+    "modern agriculture": "ðŸ¤– Smart Farming technologies use IoT sensors, AI crop prediction, Drones for spraying, and Satellite monitoring to maximize yield.",
+    "drone": "ðŸ¤– Drones for spraying significantly reduce labor costs and eliminate manual health risks from chemicals.",
+    "future": "ðŸš€ The Future of Agriculture is heavily tech-driven: AI-based farming, Vertical farming indoors, Hydroponics, and Climate-resilient GMO crops.",
+    "hydroponic": "ðŸš€ Hydroponics grows plants using nutrient-infused water without using natural soil arrays.",
+    
+    // ------------------------------------
+    // Supply Chain & Problems
+    // ------------------------------------
+    "supply chain": "ðŸ“¦ Supply Chain Flow: Farmer â†’ Storage â†’ Transport â†’ Mandi (market) â†’ Retail â†’ Consumer.",
+    "mandi": "ðŸ“¦ Mandi is the centralized market point connecting farmers with national transport and retail sectors. Check our Market dashboard for LIVE Mandi prices!",
+    "problems": "ðŸ’¡ Major Agriculture Problems in India: Water shortage, Low productivity, Price instability, Lack of technology adoption, and Middlemen issues.",
+    
+    // ------------------------------------
+    // Scheme Data
+    // ------------------------------------
+    "pm-kisan": "ðŸ’° PM-KISAN Scheme: The Government provides Rs 6000 per year to eligible farmers in three equal installments. Ensure your e-KYC is updated.",
+    "pm kisan": "ðŸ’° PM-KISAN Scheme: The Government provides Rs 6000 per year to eligible farmers in three equal installments. Ensure your e-KYC is updated.",
+    "scheme": "ðŸ�¢ Government Schemes: Major schemes include PM-KISAN (Rs 6000/year), PM Fasal Bima Yojana (Crop Insurance), and Soil Health Card.",
+    "soil health": "ðŸŒ� The Soil Health Card gives you a precise Soil Quality Analysis to balance Nitrogen, Phosphorus, and Potassium.",
+    
+    // ====================================
+    // SPECIFIC CROP PROFILES (40 CROPS)
+    // ====================================
+
+    // Cereals (Grains)
+    "rice": "ðŸŒ¾ Rice/Paddy (à¤§à¤¾à¤¨): Cultivation flows: Nursery â†’ Transplant â†’ Flooded field â†’ Harvest when golden. Kharif season crop.",
+    "wheat": "ðŸŒ¾ Wheat (à¤—à¥‡à¤¹à¥‚à¤‚): Direct sow in November (Rabi season). Irrigate actively but cut only when the stalks are dry.",
+    "maize": "ðŸŒ¾ Maize (Corn/à¤®à¤•à¥�à¤•à¤¾): Plant seeds in direct rows. Growth involves tasseling followed by cob formation, then harvest.",
+    "corn": "ðŸŒ¾ Maize (Corn/à¤®à¤•à¥�à¤•à¤¾): Plant seeds in direct rows. Growth involves tasseling followed by cob formation, then harvest.",
+    "barley": "ðŸŒ¾ Barley: Direct sow in environments requiring low water. Harvest completely dry.",
+    "bajra": "ðŸŒ¾ Millet (Bajra): Dry land sowing with incredibly hardy growth. Harvest the flowering heads when mature.",
+    "millet": "ðŸŒ¾ Millet (Bajra): Dry land sowing with incredibly hardy growth. Harvest the flowering heads when mature.",
+    "jowar": "ðŸŒ¾ Sorghum (Jowar): Warm sowing process. It is highly drought resistant. Harvest by cutting the stalks.",
+    "sorghum": "ðŸŒ¾ Sorghum (Jowar): Warm sowing process. It is highly drought resistant. Harvest by cutting the stalks.",
+    
+    // Pulses (Dal)
+    "gram": "ðŸŒ¿ Gram (Chickpea): Winter sow requiring very low water. Pods are harvested when dry.",
+    "chickpea": "ðŸŒ¿ Gram (Chickpea): Winter sow requiring very low water. Pods are harvested when dry.",
+    "lentil": "ðŸŒ¿ Lentil (Masoor): Cool season, rather short crop. Harvest completely dry.",
+    "masoor": "ðŸŒ¿ Lentil (Masoor): Cool season, rather short crop. Harvest completely dry.",
+    "arhar": "ðŸŒ¿ Pigeon Pea (Arhar): Very long duration crop. The pods are harvested manually.",
+    "pigeon pea": "ðŸŒ¿ Pigeon Pea (Arhar): Very long duration crop. The pods are harvested manually.",
+    "urad": "ðŸŒ¿ Black Gram (Urad): Kharif sown, features extremely fast growth. Pick the pods carefully.",
+    "black gram": "ðŸŒ¿ Black Gram (Urad): Kharif sown, features extremely fast growth. Pick the pods carefully.",
+    "moong": "ðŸŒ¿ Green Gram (Moong): A very short crop cycle. Ready to harvest in just 2â€“3 months.",
+    "green gram": "ðŸŒ¿ Green Gram (Moong): A very short crop cycle. Ready to harvest in just 2â€“3 months.",
+    
+    // Oilseeds
+    "mustard": "ðŸŒ» Mustard: Winter sown crop characterized by vibrant yellow flowers. Seeds are harvested for oil extraction.",
+    "groundnut": "ðŸŒ» Groundnut: Plant seeds and wait for underground pods to fully form, then dig them out.",
+    "sunflower": "ðŸŒ» Sunflower: Grown explicitly for its large flower heads. Seeds are extracted and crushed for oil.",
+    "soybean": "ðŸŒ» Soybean: Kharif sown legume. Wait rigorously for pods to dry completely before harvesting.",
+    "sesame": "ðŸŒ» Sesame (Til): Features very small seeds. The plant requires completely dry cutting at the end of its cycle.",
+    "til": "ðŸŒ» Sesame (Til): Features very small seeds. The plant requires completely dry cutting at the end of its cycle.",
+    
+    // Cash Crops
+    "cotton": "ðŸŒ± Cotton (à¤•à¤ªà¤¾à¤¸): A long crop cycle. Wait for the bolls to open fully before picking the cotton fibers.",
+    "sugarcane": "ðŸ’° Sugarcane: Use stem cuttings to propagate. It takes 10â€“12 months of heavily irrigated growth before cutting the cane.",
+    "jute": "ðŸ’° Jute: Grown mainly for industrial fiber. Stems are cut and undergo a specific retting process in water to extract fibers.",
+    "tobacco": "ðŸ’° Tobacco: The broad leaves are harvested gradually and undergo highly controlled drying processes.",
+    
+    // Vegetables
+    "potato": "ðŸ¥¬ Potato: Seed tubers are planted directly into ridges. Allow underground growth, then dig aggressively to harvest.",
+    "tomato": "ðŸ�… Tomato (à¤Ÿà¤®à¤¾à¤Ÿà¤°): Grown initially in a Nursery and then Transplanted. Requires rigorous fruit picking. Good spacing prevents fruit rot.",
+    "tamatar": "ðŸ�… Tomato (à¤Ÿà¤®à¤¾à¤Ÿà¤°): Grown initially in a Nursery and then Transplanted. Requires rigorous fruit picking. Good spacing prevents fruit rot.",
+    "onion": "ðŸ¥¬ Onion: Wait for the underground bulb formation and wait for the green tops to dry completely before pulling them out.",
+    "cabbage": "ðŸ¥¬ Cabbage: Wait for the tight leafy head formation, then slice it directly from the base.",
+    "cauliflower": "ðŸ¥¬ Cauliflower: Grown exclusively for its dense white head structure. Harvest it early before flowering spreads.",
+    "carrot": "ðŸ¥¬ Carrot: A very common root crop. Simply pull firmly from the loose soil once mature.",
+    "spinach": "ðŸ¥¬ Spinach: Fast growing leaf crop. You can cut the exterior leaves multiple times over the season.",
+    
+    // Fruits
+    "mango": "ðŸ�Ž Mango: A massive tree crop. Initial flowering must be shielded from frost, followed by fruit formation several months later.",
+    "banana": "ðŸ�Ž Banana: Propagated via Rhizome planting. The massive stalk bunches are harvested entirely when ripe.",
+    "apple": "ðŸ�Ž Apple: Exclusively grown in cold climates. Requires gentle individual fruit picking.",
+    "orange": "ðŸ�Ž Orange: A citrus tree producing seasonal harvests. Needs specialized fertigation.",
+    "grapes": "ðŸ�Ž Grapes: Fast-growing vines requiring heavy structural pruning. Bunches are harvested seasonally.",
+    
+    // Plantations
+    "tea": "ðŸŒ¿ Tea: Cultivated on sloped plantations. New exterior leaves are plucked regularly ensuring sustained seasonal yield.",
+    "coffee": "ðŸŒ¿ Coffee: Highly regulated plantation crop. Beans are extracted directly from the harvested red berries and processed.",
+    "rubber": "ðŸŒ¿ Rubber: Natural liquid latex is methodically tapped directly from the live tree trunks.",
+    
+    // Others
+    "chilli": "ðŸŒ¶ï¸� Chilli: Spice crop requiring multiple waves of fruit picking throughout its heavy growth phase.",
+    "turmeric": "ðŸŒ¿ Turmeric: Grown as a Rhizome taking 7â€“9 months. Harvested entirely by digging at the end.",
+    "ginger": "ðŸŒ¿ Ginger: Grown precisely as an underground stem crop. Requires heavy soil digging for the final harvest.",
+    "watermelon": "ðŸ�‰ Watermelon: Sprawling vine ensuring large fruit harvests. Very popular explicitly as a Zaid warm-season crop.",
+    "cucumber": "ðŸ¥’ Cucumber: Very fast vine crop requiring constant and frequent picking. Popular Zaid season crop.",
+    
+    // ------------------------------------
+    // Multilingual Fallbacks (Hindi, Punjabi, Urdu)
+    // ------------------------------------
+    "à¤—à¥‡à¤¹à¥‚à¤‚": "ðŸŒ¾ For Wheat (à¤—à¥‡à¤¹à¥‚à¤‚): Wheat is best planted in November in Northern India. To prevent wheat rust disease, use fungicides like Propiconazole. Apply Urea in splits for better yield.",
+    "à¤Ÿà¤®à¤¾à¤Ÿà¤°": "ðŸ�… For Tomatoes (à¤Ÿà¤®à¤¾à¤Ÿà¤°): Tomatoes need well-drained soil and plenty of sunlight. Watering is crucialâ€”water deeply at the base 1-2 times a week.",
+    "à¤ªà¥€à¤�à¤®-à¤•à¤¿à¤¸à¤¾à¤¨": "ðŸ’° PM-KISAN Scheme: The Government provides Rs 6000 per year to eligible farmers in three equal installments. Ensure your e-KYC is updated.",
+    "à¤²à¥€à¤« à¤°à¤¸à¥�à¤Ÿ": "ðŸ¦  Fungal leaf diseases like Rust can be treated using broad-spectrum fungicides.",
+    "à¤®à¤•à¥�à¤•à¤¾": "ðŸŒ¾ Maize (Corn/à¤®à¤•à¥�à¤•à¤¾): Plant seeds in direct rows. Growth involves tasseling followed by cob formation, then harvest.",
+    "à¤§à¤¾à¤¨": "ðŸŒ¾ Rice/Paddy (à¤§à¤¾à¤¨): Cultivation flows: Nursery â†’ Transplant â†’ Flooded field â†’ Harvest when golden. Kharif season crop.",
+    "à¤•à¤ªà¤¾à¤¸": "ðŸŒ± Cotton (à¤•à¤ªà¤¸): A long crop cycle. Wait for the bolls to open fully before picking the cotton fibers.",
+    "à¤®à¥Œà¤¸à¤®": "ðŸŒ¦ï¸ Weather Advisory: Please check the 'Real-time Weather' section on the dashboard for exact local forecasts. Always avoid spraying chemicals on windy or rainy days.",
+    
+    // Punjabi
+    "à¨•à¨£à¨•": "ðŸŒ¾ For Wheat (à¨•à¨£à¨•): Wheat is best planted in November in Northern India. To prevent wheat rust disease, use fungicides like Propiconazole.",
+    "à¨Ÿà¨®à¨¾à¨Ÿà¨°": "🍅 For Tomatoes (à¨Ÿà¨®à¤¾à¤Ÿà¤°): Tomatoes need well-drained soil and plenty of sunlight. Watering is crucial—water deeply at the base 1-2 times a week."
+};
+
+export const streamChat = async (query, onChunk) => {
+  try {
+    const lowerQuery = query.toLowerCase();
+    let answer = "";
+    
+    // 1. ATTEMPT REAL GEMINI AI FIRST
+    try {
+        const GEMINI_API_KEY = "AIzaSyCVWKPIyuroCuUuwTC_ejOrTeTT2ZoyQgE"; // Provided by user
+        
+        const response = await axios.post(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+            {
+                contents: [{ role: "user", parts: [{ text: query }] }],
+                systemInstruction: { parts: [{ text: "You are CropWise GenAI, an expert agricultural assistant. CRITICAL INSTRUCTION: You MUST ONLY answer questions strictly related to agriculture, farming, crops, livestock, market prices, and government farming schemes. If a user asks about ANY other non-farming topic, politely decline and state that you only assist with agricultural topics. Keep your answers concise, well-formatted, and respond strictly in the language requested by the user." }] }
+            },
+            { timeout: 7000 } // 7-second timeout for quick fallback
+        );
+        
+        if (response.data && response.data.candidates && response.data.candidates.length > 0) {
+            answer = response.data.candidates[0].content.parts[0].text;
+        } else {
+            throw new Error("Empty response from Gemini");
+        }
+    } catch (apiError) {
+        console.warn("Gemini API skipped/failed. Executing Offline Edge Fallback.", apiError.message);
+        
+        // 2. OFFLINE EDGE DATABASE FALLBACK (Executes instantly if No Internet or API Timeout)
+        const cleanQuery = " " + lowerQuery.replace(/[.,?!()ØŸ]/g, " ") + " ";
+
+        answer = "ðŸ’¡ **Agricultural Insight:** Based on farming best practices, always ensure timely watering, proper spacing, and adequate pest control. I recommend uploading a photo to our **AI Disease Scanner** on the dashboard for detailed metrics! (Note: Running on Offline Database Mode)";
+        if (lowerQuery.includes("hindi")) {
+          answer = "ðŸ’¡ **à¤•à¥ƒà¤·à¤¿ à¤œà¤¾à¤¨à¤•à¤¾à¤°à¥€:** à¤¹à¤®à¥‡à¤¶à¤¾ à¤¸à¤®à¤¯ à¤ªà¤° à¤¸à¤¿à¤‚à¤šà¤¾à¤ˆ, à¤‰à¤šà¤¿à¤¤ à¤¦à¥‚à¤°à¥€ à¤”à¤° à¤•à¥€à¤Ÿ à¤¨à¤¿à¤¯à¤‚à¤¤à¥�à¤°à¤£ à¤¸à¥�à¤¨à¤¿à¤¶à¥�à¤šà¤¿à¤¤ à¤•à¤°à¥‡à¤‚à¥¤ à¤—à¤¹à¤°à¤¾à¤ˆ à¤¸à¥‡ à¤œà¤¾à¤¨à¤•à¤¾à¤°à¥€ à¤•à¥‡ à¤²à¤¿à¤� 'AI Disease Scanner' à¤•à¤¾ à¤‰à¤ªà¤¯à¥‹à¤— à¤•à¤°à¥‡à¤‚à¥¤ (Note: Running on Offline Database Mode)";
+        } else if (lowerQuery.includes("punjabi")) {
+          answer = "ðŸ’¡ **à¨–à©‡à¨¤à©€à¨¬à¨¾à©œà©€ à¨œà¨¾à¨£à¨•à¨¾à¨°à©€:** à¨¸à¨®à©‡à¨‚ à¨¸à¨¿à¨° à¨ªà¨¾à¨£à©€ à¨¦à©‡à¨£à¨¾ à¨…à¨¤à©‡ à¨•à©€à©œà©‡-à¨®à¨•à©Œà©œà¨¿à¨†à¨‚ à¨¦à©€ à¨°à©‹à¨•à¨¥à¨¾à¨® à¨¯à¨•à©€à¨¨à©€ à¨¬à¨£à¨¾à¨“à¥¤ à¨¹à©‹à¨° à¨œà¨¾à¨£à¨•à¨¾à¨°à©€ à¨²à¨ˆ 'AI Disease Scanner' à¨¦à©€ à¨µà¨°à¨¤à©‹à¨‚ à¨•à¨°à©‹à¥¤ (Note: Running on Offline Database Mode)";
+        } else if (lowerQuery.includes("urdu")) {
+          answer = "ðŸ’¡ **Ø²Ø±Ø¹ÛŒ Ù…Ø¹Ù„ÙˆÙ…Ø§Øª:** Ø¨Ø±ÙˆÙ‚Øª Ø¢Ø¨Ù¾Ø§Ø´ÛŒ Ø§ÙˆØ± Ú©ÛŒÚ‘ÙˆÚº Ù¾Ø± Ù‚Ø§Ø¨Ùˆ Ù¾Ø§Ù†Û’ Ú©Ùˆ ÛŒÙ‚ÛŒÙ†ÛŒ Ø¨Ù†Ø§Ø¦ÛŒÚºÛ” Ù…Ø²ÛŒØ¯ ØªÙ�ØµÛŒÙ„Ø§Øª Ú©Û’ Ù„ÛŒÛ’ 'AI Disease Scanner' Ø§Ø³ØªØ¹Ù…Ø§Ù„ Ú©Ø±ÛŒÚºÛ” (Note: Running on Offline Database Mode)";
+        }
+        
+        const sortedKeys = Object.keys(INTENT_DB).sort((a, b) => b.length - a.length);
+        for (const key of sortedKeys) {
+          if (cleanQuery.includes(" " + key + " ")) {
+            answer = INTENT_DB[key];
+            break;
+          }
+        }
+    }
+
+    // 3. Simulate High-Speed Streaming Delivery to UX
+    const splitRegex = /(?=[\\s\\n])/; // Split keeping whitespace
+    const words = answer.split(splitRegex);
+    for (let i = 0; i < words.length; i++) {
+      onChunk(words[i]);
+      await new Promise(r => setTimeout(r, 20)); // Rapid stream effect
+    }
+    
+  } catch (error) {
+    console.error("Critical stream error:", error);
+    onChunk("\\n**Error:** Unable to process the request.");
+  }
+};¨¾à¨£à©€ à¨¦à©‡à¨£à¨¾ à¨…à¨¤à©‡ à¨•à©€à©œà©‡-à¨®à¨•à©Œà©œà¨¿à¨†à¨‚ à¨¦à©€ à¨°à©‹à¨•à¨¥à¨¾à¨® à¨¯à¨•à©€à¨¨à©€ à¨¬à¨£à¨¾à¨“à¥¤ à¨¹à©‹à¨° à¨œà¨¾à¨£à¨•à¨¾à¨°à©€ à¨²à¨ˆ 'AI Disease Scanner' à¨¦à©€ à¨µà¨°à¨¤à©‹à¨‚ à¨•à¨°à©‹à¥¤";
+    } else if (lowerQuery.includes("urdu")) {
+      answer = "ðŸ’¡ **Ø²Ø±Ø¹ÛŒ Ù…Ø¹Ù„ÙˆÙ…Ø§Øª:** Ø¨Ø±ÙˆÙ‚Øª Ø¢Ø¨Ù¾Ø§Ø´ÛŒ Ø§ÙˆØ± Ú©ÛŒÚ‘ÙˆÚº Ù¾Ø± Ù‚Ø§Ø¨Ùˆ Ù¾Ø§Ù†Û’ Ú©Ùˆ ÛŒÙ‚ÛŒÙ†ÛŒ Ø¨Ù†Ø§Ø¦ÛŒÚºÛ” Ù…Ø²ÛŒØ¯ ØªÙ�ØµÛŒÙ„Ø§Øª Ú©Û’ Ù„ÛŒÛ’ 'AI Disease Scanner' Ø§Ø³ØªØ¹Ù…Ø§Ù„ Ú©Ø±ÛŒÚºÛ”";
+    }
+    
+    // Sort keys by length descending to match the most specific multi-word phrases first!
+    const sortedKeys = Object.keys(INTENT_DB).sort((a, b) => b.length - a.length);
+    
+    for (const key of sortedKeys) {
+      // Space matching guarantees "hi" doesn't match "hindi", but avoids breaking on Unicode/Hindi text like \b does!
+      if (cleanQuery.includes(" " + key + " ")) {
+        answer = INTENT_DB[key];
+        break;
+      }
+    }
+
+    // Simulate streaming response locally
+    const words = answer.split(" ");
+    for (let i = 0; i < words.length; i++) {
+      onChunk(words[i] + " ");
+      await new Promise(r => setTimeout(r, 30));
+    }
+    
+  } catch (error) {
+    console.error("Error streaming chat:", error);
+    onChunk("\\n**Offline Fallback:** Unable to process the request locally.");
+  }
+};
